@@ -1,0 +1,38 @@
+name: Code Quality
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: 1.2.x
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run linting
+        run: bun run lint
+
+      - name: Start InfluxDB containers
+        run: docker-compose -f docker-compose.dev.yaml up -d influxdb1 influxdb2
+
+      - name: Wait for InfluxDB to be ready
+        run: |
+          timeout 30s bash -c 'until curl -s http://localhost:18086/ping > /dev/null; do sleep 1; done'
+          timeout 30s bash -c 'until curl -s http://localhost:18087/ping > /dev/null; do sleep 1; done'
+
+      - name: Run tests
+        run: bun test
+
+      - name: Cleanup InfluxDB containers
+        if: always()
+        run: docker-compose -f docker-compose.dev.yaml down

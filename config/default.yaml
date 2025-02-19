@@ -1,0 +1,41 @@
+### Default configuration
+
+# Shelly device configuration
+# Multiple devices can be configured by adding additional entries to the array
+# - host: Required. IP address or hostname of the Shelly device
+# - username/password: Optional. Authentication credentials if device is protected
+# - tags: Required. At least one tag to identify the device in InfluxDB
+#   - device_name: Recommended tag to identify the device
+# - measurement: Optional. Name of the measurement in InfluxDB (defaults to 'shelly_em')
+#
+# Example for multiple devices:
+# shelly:
+#   - host: "192.168.1.100"
+#     tags:
+#       device_name: "Shelly-3EM_Kitchen"
+#   - host: "192.168.1.101" 
+#     tags:
+#       device_name: "Shelly-3EM_Garage"
+
+
+# Example InfluxDB v1 configuration
+# influx:
+#   version: 1
+#   host: "127.0.0.1"
+#   port: 8086
+#   database: "shelly_data"
+#   username: null
+#   password: null
+
+
+# Example InfluxDB v2 configuration
+# influx:
+#   version: 2
+#   url: "http://127.0.0.1:8086"
+#   token: "my-super-secret-auth-token"
+#   org: "shelly"
+#   bucket: "shelly_data" 
+
+
+# Interval in seconds between scrapes (default: 1 minute)
+scrapeInterval: 60

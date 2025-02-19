@@ -1,0 +1,31 @@
+services:
+  influxdb1:
+    image: influxdb:1.8-alpine
+    ports:
+      - "18086:8086"
+    environment:
+      - INFLUXDB_DB=shelly_data
+      - INFLUXDB_HTTP_AUTH_ENABLED=false
+
+
+  influxdb2:
+    image: influxdb:2.7-alpine
+    ports:
+      - "18087:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=admin123
+      - DOCKER_INFLUXDB_INIT_ORG=shelly
+      - DOCKER_INFLUXDB_INIT_BUCKET=shelly_data
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-super-secret-auth-token
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "13000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+
