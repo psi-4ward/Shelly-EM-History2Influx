@@ -3,8 +3,8 @@
  * @docs https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/EMData/#emdatagetdata-example
  */
 
-import type { PointInput } from './InfluxService';
 import debug from 'debug';
+import type { PointInput } from './InfluxService';
 
 const d = debug('s2i:ShellyService');
 
@@ -58,8 +58,9 @@ export class ShellyService {
    * @param toTimestamp - End timestamp in seconds (optional)
    */
   async getHistory(fromTimestamp: number, toTimestamp?: number): Promise<EMHistory> {
-    d('fetching history from=%s to=%s', 
-      formatDate(fromTimestamp), 
+    d(
+      'fetching history from=%s to=%s',
+      formatDate(fromTimestamp),
       toTimestamp ? formatDate(toTimestamp) : 'now'
     );
     let response = await this.fetchHistory(fromTimestamp, toTimestamp);
@@ -83,11 +84,12 @@ export class ShellyService {
     const { keys = [], data } = response;
     const historyItems: EMHistory = [];
 
-    data.forEach(({ts, period, values}) => {
+    // biome-ignore lint: I like forEach :p
+    data.forEach(({ ts, period, values }) => {
       values.forEach((dataSet, index) => {
         // Calculate timestamp for this history-item
-        const historyItem: EMHistory[number] = { 
-          timestamp: ts + (index * period) 
+        const historyItem: EMHistory[number] = {
+          timestamp: ts + index * period,
         };
 
         // Map values to their corresponding keys
@@ -96,8 +98,14 @@ export class ShellyService {
         });
 
         // Calculate totals for each phase
-        historyItem.total_act_energy = historyItem.a_total_act_energy + historyItem.b_total_act_energy + historyItem.c_total_act_energy;
-        historyItem.total_act_ret_energy = historyItem.a_total_act_ret_energy + historyItem.b_total_act_ret_energy + historyItem.c_total_act_ret_energy;
+        historyItem.total_act_energy =
+          historyItem.a_total_act_energy +
+          historyItem.b_total_act_energy +
+          historyItem.c_total_act_energy;
+        historyItem.total_act_ret_energy =
+          historyItem.a_total_act_ret_energy +
+          historyItem.b_total_act_ret_energy +
+          historyItem.c_total_act_ret_energy;
 
         historyItems.push(historyItem);
       });

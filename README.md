@@ -1,7 +1,6 @@
 # Shelly EM History 2 InfluxDB
 
-[![Tests](https://github.com/psi-4ward/Shelly-EM-History2Influx/actions/workflows/test.yml/badge.svg)](https://github.com/psi-4ward/Shelly-EM-History2Influx/actions/workflows/test.yml)
-[![Build](https://github.com/psi-4ward/Shelly-EM-History2Influx/actions/workflows/build.yml/badge.svg)](https://github.com/psi-4ward/Shelly-EM-History2Influx/actions/workflows/build.yml)
+[![Code Quality](https://github.com/psi-4ward/Shelly-EM-History2Influx/actions/workflows/code-quality.yml/badge.svg)](https://github.com/psi-4ward/Shelly-EM-History2Influx/actions/workflows/code-quality.yml)
 
 Import historical energy measurement data from Shelly EM devices into InfluxDB for long-term storage and analysis.
 

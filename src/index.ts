@@ -1,7 +1,7 @@
+import debug from 'debug';
 import { config } from './config';
 import { createInfluxService } from './lib/InfluxService';
-import { ShellyService, type EMHistory } from './lib/ShellyService';
-import debug from 'debug';
+import { type EMHistory, ShellyService } from './lib/ShellyService';
 
 // Debug namespace
 const d = debug('s2i');
@@ -28,7 +28,7 @@ const activeTimeouts: Set<ReturnType<typeof setTimeout>> = new Set();
  */
 async function scrapeDevice(shelly: ShellyService): Promise<void> {
   const measurement = shelly.getMeasurementName();
-  
+
   let lastTimestamp = 0;
   try {
     lastTimestamp = (await services.influx.getLastTimestamp(measurement)) ?? 0;
@@ -36,15 +36,21 @@ async function scrapeDevice(shelly: ShellyService): Promise<void> {
     lastTimestamp++;
     d('last timestamp for measurement %s: %d', measurement, lastTimestamp);
     if (lastTimestamp < 10) {
-      console.log(`${icons.warning} Initial scrape for ${shelly.getHost()} - this could take a while...`);
+      console.log(
+        `${icons.warning} Initial scrape for ${shelly.getHost()} - this could take a while...`
+      );
     }
   } catch (error) {
     console.error(`${icons.error} Error getting last timestamp:`, error);
     return;
   }
-  
-  d('fetching history since %s for device %s', new Date(lastTimestamp*1000).toISOString(), shelly.getHost());
-  
+
+  d(
+    'fetching history since %s for device %s',
+    new Date(lastTimestamp * 1000).toISOString(),
+    shelly.getHost()
+  );
+
   let history: EMHistory = [];
   try {
     history = await shelly.getHistory(lastTimestamp);
@@ -60,14 +66,19 @@ async function scrapeDevice(shelly: ShellyService): Promise<void> {
   }
 
   const points = shelly.toInfluxPoints(history);
-  
+
   try {
-    d('writing %d points to influx for device %s (measurement: %s)', points.length, shelly.getHost(), points[0].measurement);
+    d(
+      'writing %d points to influx for device %s (measurement: %s)',
+      points.length,
+      shelly.getHost(),
+      points[0].measurement
+    );
     await services.influx.bulkWrite(points);
     console.log(
-      `${icons.success} Wrote ${points.length} points from ${shelly.getHost()} to ${points[0].measurement} from ${new Date(
-        history[0].timestamp * 1000
-      ).toISOString()} to ${new Date(
+      `${icons.success} Wrote ${points.length} points from ${shelly.getHost()} to ${
+        points[0].measurement
+      } from ${new Date(history[0].timestamp * 1000).toISOString()} to ${new Date(
         history[history.length - 1].timestamp * 1000
       ).toISOString()}`
     );
@@ -82,7 +93,7 @@ async function scrapeDevice(shelly: ShellyService): Promise<void> {
 async function deviceScrapeLoop(shelly: ShellyService): Promise<never> {
   while (true) {
     await scrapeDevice(shelly);
-    await new Promise(resolve => {
+    await new Promise((resolve) => {
       const timeout = setTimeout(() => {
         activeTimeouts.delete(timeout);
         resolve(undefined);
@@ -97,11 +108,11 @@ async function deviceScrapeLoop(shelly: ShellyService): Promise<never> {
  */
 function startScraping(): void {
   d('starting scrape loops for %d devices', services.shelly.length);
-  services.shelly.forEach(shelly => {
-    deviceScrapeLoop(shelly).catch(error => {
+  for (const shelly of services.shelly) {
+    deviceScrapeLoop(shelly).catch((error) => {
       console.error(`${icons.error} Device ${shelly.getHost()} scrape loop failed:`, error);
     });
-  });
+  }
 }
 
 /**
@@ -110,13 +121,13 @@ function startScraping(): void {
 async function shutdown(): Promise<void> {
   d('initiating shutdown');
   console.log(`\n${icons.info} Shutting down...`);
-  
+
   // Clear all active timeouts
   for (const timeout of activeTimeouts) {
     clearTimeout(timeout);
   }
   activeTimeouts.clear();
-  
+
   try {
     await services.influx.close();
     d('successfully closed all connections');

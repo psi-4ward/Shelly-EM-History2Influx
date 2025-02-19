@@ -10,7 +10,7 @@ import type { ShellyConfig } from './lib/ShellyService';
 export interface Config {
   shelly: ShellyConfig[];
   influx: InfluxConfig;
-  scrapeInterval: number;  // Interval in seconds between scrapes
+  scrapeInterval: number; // Interval in seconds between scrapes
 }
 
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -120,12 +120,12 @@ function validateInfluxConfig(config: InfluxConfig): void {
 function validateConfig(config: Config): void {
   validateShellyConfig(config.shelly);
   validateInfluxConfig(config.influx);
-  
+
   // Validate scrapeInterval
   if (!config.scrapeInterval || config.scrapeInterval < 60) {
     exitWithError('scrapeInterval must be at least 60 seconds');
   }
-  
+
   console.log(`${icons.valid} Configuration is valid`);
 }
 
@@ -154,7 +154,7 @@ function loadConfig(configPath: string): Partial<Config> {
  */
 function initConfig(): Config {
   const configDir = join(process.cwd(), 'config');
-  
+
   // Load configs
   const defaultConfig = loadConfig(join(configDir, 'default.yaml'));
   const envConfig = loadConfig(join(configDir, `${NODE_ENV}.yaml`));

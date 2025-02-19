@@ -1,6 +1,6 @@
-import type { Server } from 'bun';
 import { readdir } from 'node:fs/promises';
 import path from 'node:path';
+import type { Server } from 'bun';
 import type { EMDataResponse } from '../lib/ShellyService';
 
 const MOCK_DATA_PATH = path.resolve(__dirname, '../../_mock-data/EMData');
@@ -82,4 +82,4 @@ export async function createMockServer(port = 0): Promise<MockServerData> {
     mockDataTstamps,
     mockData,
   };
-} 
+}

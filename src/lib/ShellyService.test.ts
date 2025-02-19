@@ -1,7 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
-import type { Server } from 'bun';
-import { type EMDataResponse, ShellyService } from './ShellyService';
-import { createMockServer, type MockServerData } from '../test-utils/shelly-mock-server';
+import { type MockServerData, createMockServer } from '../test-utils/shelly-mock-server';
+import { ShellyService } from './ShellyService';
 
 describe.only('ShellyService E2E', () => {
   let mockServer: MockServerData;
@@ -17,7 +16,10 @@ describe.only('ShellyService E2E', () => {
   test('should fetch subsequent history data', async () => {
     const { mockDataTstamps } = mockServer;
     const ts = mockDataTstamps[mockDataTstamps.length - 3];
-    const shellyService = new ShellyService({ host: mockServer.host, tags: { device_name: 'test' } });
+    const shellyService = new ShellyService({
+      host: mockServer.host,
+      tags: { device_name: 'test' },
+    });
     const history = await shellyService.getHistory(ts);
 
     // calculate the expected length of the history
@@ -45,7 +47,10 @@ describe.only('ShellyService E2E', () => {
   });
 
   test('should test connection successfully', async () => {
-    const shellyService = new ShellyService({ host: mockServer.host, tags: { device_name: 'test' } });
+    const shellyService = new ShellyService({
+      host: mockServer.host,
+      tags: { device_name: 'test' },
+    });
     const isConnected = await shellyService.testConnection();
 
     expect(isConnected).toBe(true);

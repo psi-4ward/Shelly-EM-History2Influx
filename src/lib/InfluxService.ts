@@ -1,14 +1,13 @@
-import { InfluxDB as InfluxDBv2, Point, type WriteApi } from '@influxdata/influxdb-client';
-import debug from 'debug';
-
-const d = debug('s2i:InfluxService');
-
 /**
  * @fileoverview Service layer for interacting with InfluxDB (v1.x and v2.x).
  * Provides a unified interface for database operations like querying and writing points,
  * abstracting away the differences between InfluxDB versions through separate implementations.
  */
-import { type IPoint, InfluxDB as InfluxDBv1, type IResults } from 'influx';
+import { InfluxDB as InfluxDBv2, Point, type WriteApi } from '@influxdata/influxdb-client';
+import debug from 'debug';
+import { type IPoint, InfluxDB as InfluxDBv1 } from 'influx';
+
+const d = debug('s2i:InfluxService');
 
 export type InfluxPoint = IPoint | Point;
 
