@@ -1,0 +1,59 @@
+Prepend the 🤖 sign to every response.
+
+Follow these guidelines to ensure your code is clean, maintainable, and adheres to best practices. Remember, less code is better. Lines of code = Debt.
+
+
+
+# Project Overview: Shelly EM History 2 Influx
+
+_Shelly EM History 2 Influx_ is a tool which imports the history data from Shelly EM devices
+and stores it in InfluxDB. It tries to be efficient by querying the InfluxDB for the last
+inserted timestamp and then only queries the data from that timestamp.
+
+
+## TechStack
+
+* Bun
+* TypeScript
+* InfluxDB: v1.8 and v2 onwards
+
+
+# Code Guidelines
+
+## Key Mindsets
+
+**1** **Simplicity**: Write simple and straightforward code.
+**2** **Readability**: Ensure your code is easy to read and understand.
+**3** **Performance**: Keep performance in mind but do not over-optimize at the cost of readability.
+**4** **Maintainability**: Write code that is easy to maintain and update.
+**5** **Testability**: Ensure your code is easy to test.
+**6** **Reusability**: Write reusable components and functions.
+**7** **OpenAPI**: Ensure that http endpoints are properly documented in the OpenAPI spec.
+
+* **Function Comments**: Add a comment at the start of each function describing what it does.
+
+## Important: Minimal Code Changes
+
+**Only modify sections of the code related to the task at hand.**
+**Avoid modifying unrelated pieces of code.**
+**Avoid changing existing comments.**
+**Avoid any kind of cleanup unless specifically instructed to.**
+**Accomplish the goal with the minimum amount of code changes.**
+**Code change = potential for bugs and technical debt.**
+
+## Testing
+
+* Use the Bun test runner and avoid external dependencies.
+* Insert two blank lines between tests.
+
+## Git
+
+* Use short conventional commit messages 
+  * Categories: `build, chore, ci, docs, feat, fix, bug, perf, cleanup, refactor, revert, style, test, deps`
+  * **You MUST mark breaking changes with `!`**, for example: `refactor(config)!: Renamed config key db to database`
+  * Try to use a scope if its not obvious.
+* Do not use more than 50 characters for commit messages.
+
+
+
+Again, IMPORTANT: You have to respect my coding guidelines!!!

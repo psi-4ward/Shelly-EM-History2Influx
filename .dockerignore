@@ -1,0 +1,41 @@
+# Version control
+.git
+.gitignore
+.github
+
+# Development
+node_modules
+_mock-data
+.cursorignore
+.cursorrules
+temp
+docker-compose*.yaml
+
+# Environment and secrets
+.env
+.env.*
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build artifacts
+dist
+build
+coverage
+
+# Docker
+Dockerfile
+docker-compose*.yaml
+.dockerignore
+
+# Misc
+*.md
+!README.md
+.DS_Store

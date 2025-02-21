@@ -1,0 +1,32 @@
+{
+  "name": "shelly_em_history2influx",
+  "version": "0.0.0",
+  "main": "src/index.ts",
+  "repository": "psi-4ward/Shelly-EM-History2Influx",
+  "author": "Christoph Wiechert <wio@psitrax.de>",
+  "license": "BSD-2-Clause",
+  "bugs": "https://github.com/psi-4ward/Shelly-EM-History2Influx/issues",
+  "type": "module",
+  "scripts": {
+    "format": "biome format --write .",
+    "lint": "biome lint .",
+    "check": "biome check --apply .",
+    "typecheck": "tsc --noEmit",
+    "start": "bun run src/index.ts",
+    "dev": "bun run --watch src/index.ts"
+  },
+  "dependencies": {
+    "@influxdata/influxdb-client": "^1.33.2",
+    "debug": "^4.4.0",
+    "influx": "^5.9.3",
+    "yaml": "^2.7.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.5.3",
+    "@types/bun": "latest",
+    "@types/debug": "^4.1.12"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

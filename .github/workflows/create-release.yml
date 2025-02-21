@@ -1,0 +1,168 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build_docker:
+    name: 🐳 Build Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🔑 Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🏗️📦 Build and push Docker image (with version tag)
+        # Repository name must be lowercase
+        run: |
+          REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          docker buildx create --use
+          docker buildx build --platform linux/amd64,linux/arm64 \
+            --build-arg VERSION=${{ github.ref_name }} \
+            --tag ghcr.io/${REPO}:${{ github.ref_name }} \
+            --push .
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    outputs:
+      changelog: ${{ steps.set_changelog.outputs.changelog }}
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get Repository URL
+        id: get_repo_url
+        run: echo "REPO_URL=https://github.com/${{ github.repository }}" >> $GITHUB_OUTPUT
+
+      - name: 📋 Create Changelog
+        id: build_changelog
+        uses: mikepenz/release-changelog-builder-action@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          mode: "COMMIT"
+          configurationJson: |
+            {
+              "template": "#{{CHANGELOG}}",
+              "categories": [
+                {
+                  "title": "## 🚀 Features",
+                  "labels": ["feat"]
+                },
+                {
+                  "title": "## ⚡ Performance",
+                  "labels": ["perf"]
+                },
+                {
+                  "title": "## 🛠 Fixes",
+                  "labels": ["fix", "bug"]
+                },
+                {
+                  "title": "## 🧹 Maintenance",
+                  "labels": ["chore", "refactor", "cleanup"]
+                },
+                {
+                  "title": "## 🏗️ Build",
+                  "labels": ["build", "ci"]
+                },
+                {
+                  "title": "## 📝 Documentation",
+                  "labels": ["docs"]
+                },
+                {
+                  "title": "## 🧪 Tests",
+                  "labels": ["test"]
+                },
+                {
+                  "title": "## ⏪ Reverts",
+                  "labels": ["revert"]
+                },
+                {
+                  "title": "## 🎨 Styling",
+                  "labels": ["style"]
+                },
+                {
+                  "title": "## 📦 Dependencies",
+                  "labels": ["deps"]
+                },
+                {
+                  "title": "## 🎯 Other Changes",
+                  "labels": []
+                }
+              ],
+              "label_extractor": [
+                {
+                  "pattern": "^(build|chore|ci|docs|feat|fix|bug|perf|cleanup|refactor|revert|style|test|deps){1}(\\([\\w\\-\\.]+\\))?(!)?: ([\\w ])+([\\s\\S]*)",
+                  "target": "$1"
+                }
+              ],
+              "pr_template": "- [#{{TITLE}}](${{ steps.get_repo_url.outputs.REPO_URL }}/commit/#{{MERGE_SHA}}) by @#{{AUTHOR}}"
+            }
+
+      - name: Set Changelog Output
+        id: set_changelog
+        run: |
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "${{ steps.build_changelog.outputs.changelog }}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: 🏷️ Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          body: ${{steps.build_changelog.outputs.changelog}}
+
+  update-hass-addon:
+    name: Update Hass-Addon Branch
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: hass-addon
+
+      - name: 🔄 Update hass-addon version
+        run: |
+          sed -i "/^version:/s/version: .*/version: \"${{ github.ref_name }}\"/" hass-addon/config.yaml
+
+      - name: 📝 Update hass-addon CHANGELOG.md
+        run: |
+          CHANGELOG_FILE="hass-addon/CHANGELOG.md"
+          VERSION="${{ github.ref_name }}"
+          
+          # Get the new changelog content and prepare the new section
+          NEW_CHANGES="${{ needs.create-release.outputs.changelog }}"
+          # Make all headlines one level deeper
+          NEW_CHANGES=$(echo "$NEW_CHANGES" | sed 's/^## /### /')
+          NEW_SECTION="\n## ${VERSION}\n\n${NEW_CHANGES}\n"
+          
+          # Insert new section after the first headline
+          TEMP_FILE=$(mktemp)
+          echo '# Changelog' > "$TEMP_FILE"
+          echo -e "$NEW_SECTION" >> "$TEMP_FILE"
+          tail -n +2 "$CHANGELOG_FILE" >> "$TEMP_FILE"
+          mv "$TEMP_FILE" "$CHANGELOG_FILE"
+
+      - name: 📤 Commit and push hass-addon updates
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add hass-addon/config.yaml hass-addon/CHANGELOG.md
+          git commit -m "chore(hass-addon): Bump version to ${{ github.ref_name }}"
+          git push

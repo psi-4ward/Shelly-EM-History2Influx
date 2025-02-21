@@ -1,0 +1,10 @@
+node_modules/
+dist
+.bun/
+bun-debug.log*
+.DS_Store
+Thumbs.db
+.idea
+.env
+temp
+config/development.yaml
