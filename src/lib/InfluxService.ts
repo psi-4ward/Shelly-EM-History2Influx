@@ -43,7 +43,7 @@ export type PointInput = {
 abstract class BaseInfluxService {
   abstract query<T = Record<string, unknown>>(query: string): Promise<T[]>;
   abstract bulkWrite(points: PointInput[]): Promise<void>;
-  abstract getLastTimestamp(measurement: string): Promise<number | null>;
+  abstract getLastTimestamp(measurement: string, deviceName: string): Promise<number | null>;
   abstract close(): Promise<void>;
 }
 
@@ -78,9 +78,13 @@ class InfluxServiceV1 extends BaseInfluxService {
     d('successfully wrote points');
   }
 
-  async getLastTimestamp(measurement: string): Promise<number | null> {
+  async getLastTimestamp(measurement: string, deviceName: string): Promise<number | null> {
     d('getting last timestamp for measurement %s', measurement);
-    const query = `SELECT time, total_act_energy FROM ${measurement} ORDER BY time DESC LIMIT 1`;
+    const query = `
+      SELECT time, total_act_energy 
+      FROM ${measurement} 
+      WHERE ("device_name"::tag = '${deviceName}') 
+      ORDER BY time DESC LIMIT 1`;
     type TimeResult = { time: string; value: number };
     const results = await this.query<TimeResult>(query);
     const ts = results.length > 0 ? Math.floor(new Date(results[0].time).getTime() / 1000) : null;
@@ -142,12 +146,13 @@ class InfluxServiceV2 extends BaseInfluxService {
     d('successfully wrote points');
   }
 
-  async getLastTimestamp(measurement: string): Promise<number | null> {
-    d('getting last timestamp for measurement %s', measurement);
+  async getLastTimestamp(measurement: string, deviceName: string): Promise<number | null> {
+    d('getting last timestamp for measurement %s and device %s', measurement, deviceName);
     const query = `
       from(bucket: "${this.config.bucket}")
         |> range(start: -61d)
         |> filter(fn: (r) => r["_measurement"] == "${measurement}")
+        |> filter(fn: (r) => r["device_name"] == "${deviceName}")
         |> filter(fn: (r) => r["_field"] == "total_act_energy")
         |> last()
     `;

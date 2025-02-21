@@ -5,7 +5,7 @@
 # - host: Required. IP address or hostname of the Shelly device
 # - username/password: Optional. Authentication credentials if device is protected
 # - tags: Required. At least one tag to identify the device in InfluxDB
-#   - device_name: Recommended tag to identify the device
+#   - device_name: Required tag to identify the device
 # - measurement: Optional. Name of the measurement in InfluxDB (defaults to 'shelly_em')
 #
 # Example for multiple devices:

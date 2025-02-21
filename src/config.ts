@@ -88,6 +88,11 @@ function validateShellyConfig(configs: ShellyConfig[]): void {
         }
       }
     }
+
+    // Validate device_name
+    if (!config.tags.device_name) {
+      exitWithError(`device_name tag is required for device at index ${index}`);
+    }
   });
 }
 

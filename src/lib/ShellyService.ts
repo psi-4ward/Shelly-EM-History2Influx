@@ -141,6 +141,13 @@ export class ShellyService {
   }
 
   /**
+   * Get the device name
+   */
+  public getDeviceName(): string {
+    return this.config.tags.device_name;
+  }
+
+  /**
    * Convert EMHistory items to InfluxDB points
    */
   public toInfluxPoints(history: EMHistory): PointInput[] {

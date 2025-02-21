@@ -35,7 +35,7 @@ async function scrapeDevice(shelly: ShellyService): Promise<void> {
 
   let lastTimestamp = 0;
   try {
-    lastTimestamp = (await services.influx.getLastTimestamp(measurement)) ?? 0;
+    lastTimestamp = (await services.influx.getLastTimestamp(measurement, shelly.getDeviceName())) ?? 0;
     // increment time by 1 second because we already scraped data until "lastTimestamp"
     lastTimestamp++;
     d('last timestamp for measurement %s: %d', measurement, lastTimestamp);

@@ -2,6 +2,7 @@ import { afterAll, describe, expect, test } from 'bun:test';
 import { createInfluxService } from './InfluxService';
 
 const TEST_MEASUREMENT = 'test_measurement';
+const TEST_DEVICE = 'shellyem-test';
 
 describe('InfluxService E2E Tests', () => {
   const services = [
@@ -40,13 +41,14 @@ describe('InfluxService E2E Tests', () => {
           measurement: TEST_MEASUREMENT,
           fields: { total_act_energy: 42.5 },
           timestamp,
+          tags: { device_name: TEST_DEVICE },
         };
 
         // Write point
         await influx.bulkWrite([point]);
 
         // Get last timestamp
-        const lastTimestamp = await influx.getLastTimestamp(TEST_MEASUREMENT);
+        const lastTimestamp = await influx.getLastTimestamp(TEST_MEASUREMENT, TEST_DEVICE);
         expect(lastTimestamp).not.toBeNull();
 
         // The returned timestamp should be close to our written timestamp
@@ -59,24 +61,27 @@ describe('InfluxService E2E Tests', () => {
         const points = [
           {
             measurement: TEST_MEASUREMENT,
-            fields: { value: 1 },
+            fields: { total_act_energy: 1 },
             timestamp: now - 2,
+            tags: { device_name: TEST_DEVICE },
           },
           {
             measurement: TEST_MEASUREMENT,
-            fields: { value: 2 },
+            fields: { total_act_energy: 2 },
             timestamp: now - 1,
+            tags: { device_name: TEST_DEVICE },
           },
           {
             measurement: TEST_MEASUREMENT,
-            fields: { value: 3 },
+            fields: { total_act_energy: 3 },
             timestamp: now,
+            tags: { device_name: TEST_DEVICE },
           },
         ];
 
         await influx.bulkWrite(points);
 
-        const lastTimestamp = (await influx.getLastTimestamp(TEST_MEASUREMENT))!;
+        const lastTimestamp = (await influx.getLastTimestamp(TEST_MEASUREMENT, TEST_DEVICE))!;
         expect(lastTimestamp).not.toBeNull();
 
         const timeDiff = Math.abs(lastTimestamp - now);
@@ -84,8 +89,41 @@ describe('InfluxService E2E Tests', () => {
       });
 
       test('should return null for non-existent measurement', async () => {
-        const lastTimestamp = await influx.getLastTimestamp('non_existent_measurement');
+        const lastTimestamp = await influx.getLastTimestamp('non_existent_measurement', TEST_DEVICE);
         expect(lastTimestamp).toBeNull();
+      });
+
+      test('should handle multiple devices correctly', async () => {
+        const now = Math.floor(Date.now() / 1000);
+        const device1 = 'shellyem-123';
+        const device2 = 'shellyem-456';
+        
+        const points = [
+          {
+            measurement: TEST_MEASUREMENT,
+            fields: { total_act_energy: 10 },
+            timestamp: now - 60, // 60 seconds ago
+            tags: { device_name: device1 },
+          },
+          {
+            measurement: TEST_MEASUREMENT,
+            fields: { total_act_energy: 20 },
+            timestamp: now - 7200, // 2 hours ago
+            tags: { device_name: device2 },
+          }
+        ];
+
+        await influx.bulkWrite(points);
+
+        // Check device1's last timestamp (60s ago)
+        const lastTimestamp1 = await influx.getLastTimestamp(TEST_MEASUREMENT, device1);
+        expect(lastTimestamp1).not.toBeNull();
+        expect(Math.abs(lastTimestamp1! - (now - 60))).toBeLessThan(1);
+
+        // Check device2's last timestamp (2h ago)
+        const lastTimestamp2 = await influx.getLastTimestamp(TEST_MEASUREMENT, device2);
+        expect(lastTimestamp2).not.toBeNull();
+        expect(Math.abs(lastTimestamp2! - (now - 7200))).toBeLessThan(1);
       });
     });
   }
