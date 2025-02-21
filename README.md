@@ -1,6 +1,8 @@
 # Shelly EM History 2 InfluxDB
 
+[![latest release](https://img.shields.io/github/v/release/psi-4ward/Shelly-EM-History2Influx)](https://github.com/psi-4ward/Shelly-EM-History2Influx/releases/latest)
 [![CI](https://github.com/psi-4ward/Shelly-EM-History2Influx/actions/workflows/test-and-build.yml/badge.svg)](https://github.com/psi-4ward/Shelly-EM-History2Influx/actions/workflows/test-and-build.yml)
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=RTWDCH74TJN54&item_name=shelly2influx)
 
 Import historical energy measurement data from Shelly EM devices into InfluxDB for long-term storage and analysis.
 
