@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { parse } from 'yaml';
 import type { InfluxConfig } from './lib/InfluxService';
 import type { ShellyConfig } from './lib/ShellyService';
+import { logger } from './lib/Logger';
 
 export interface Config {
   shelly: ShellyConfig[];
@@ -28,7 +29,7 @@ const icons = {
  * Log error and exit process
  */
 function exitWithError(message: string): never {
-  console.error(`\n${icons.error} Configuration Error: ${message}`);
+  logger.error(`\n${icons.error} Configuration Error: ${message}`);
   process.exit(1);
 }
 
@@ -144,7 +145,7 @@ function validateConfig(config: Config): void {
     exitWithError('scrapeInterval must be at least 60 seconds');
   }
 
-  console.log(`${icons.valid} Configuration is valid`);
+  logger.info(`${icons.valid} Configuration is valid`);
 }
 
 /**
@@ -155,11 +156,11 @@ function loadConfig(configPath: string): Partial<Config> {
     if (existsSync(configPath)) {
       const config = loadYamlConfig(configPath);
       
-      console.log(`${icons.info} Loaded configuration from: ${configPath}`);
+      logger.info(`${icons.info} Loaded configuration from: ${configPath}`);
       return config;
     }
   } catch (error) {
-    console.error(
+    logger.warn(
       `${icons.warning} Failed to load configuration from ${configPath}: ${
         error instanceof Error ? error.message : String(error)
       }`
