@@ -36,7 +36,7 @@ schema:
       username: str?
       password: str?
       measurement: str?
-      tags: str?
+      tags: str
   influx:
     version: int
     host: str?
