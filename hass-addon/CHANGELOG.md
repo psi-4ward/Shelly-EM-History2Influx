@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.0.1
+
+- no changes
+
+
 ## v0.0.5
 
 ### 🛠 Fixes
