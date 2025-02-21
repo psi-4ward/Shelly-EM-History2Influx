@@ -1,0 +1,50 @@
+name: "Shelly EM History 2 Influx"
+version: "v0.0.0"
+slug: "shelly_em_history2influx"
+description: "Import history data from Shelly EM devices into InfluxDB"
+url: "https://github.com/psi-4ward/Shelly-EM-History2Influx:hass-addon"
+arch:
+  - aarch64
+  - amd64
+image: "ghcr.io/psi-4ward/shelly-em-history2influx"
+init: false
+apparmor: true
+host_network: false
+host_dbus: false
+host_pid: false
+host_uts: false
+privileged: []
+full_access: false
+options:
+  shelly:
+    - host: "192.168.1.100"
+      username: "admin"
+      password: "password"
+      tags: "device_name=shelly_em_1,location=basement"
+  influx:
+    version: 1
+    host: "172.17.0.1"
+    port: 8086
+    username: "admin"
+    password: "password"
+    database: "shelly_data"
+  scrapeInterval: 60
+
+schema:
+  shelly:
+    - host: str
+      username: str?
+      password: str?
+      measurement: str?
+      tags: str?
+  influx:
+    version: int
+    host: str?
+    port: int?
+    username: str?
+    password: str?
+    database: str?
+    bucket: str?
+    org: str?
+    url: str?
+  scrapeInterval: int(60,)

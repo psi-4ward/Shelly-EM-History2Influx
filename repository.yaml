@@ -1,0 +1,4 @@
+# https://developers.home-assistant.io/docs/add-ons/repository#repository-configuration
+name: Shelly EM History2Influx
+url: 'https://github.com/psi-4ward/Shelly-EM-History2Influx'
+maintainer: Christoph Wiechert
