@@ -14,7 +14,7 @@ This add-on imports history data from Shelly EM devices into InfluxDB.
 
 ### Add the add-on Repository
 
-[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fpsi-4ward%2FShelly-EM-History2Influx)
+[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fpsi-4ward%2FShelly-EM-History2Influx%23hass-addon)
 
 
 **Or manually:**
@@ -22,7 +22,7 @@ This add-on imports history data from Shelly EM devices into InfluxDB.
 2. Go to Settings > Add-ons
 3. In the lower right corner click "Add-on Store"
 4. At the top right, click the 3 dots and "Repositories"
-5. Add `https://github.com/psi-4ward/Shelly-EM-History2Influx` and click "Add" followed by "Close"
+5. Add `https://github.com/psi-4ward/Shelly-EM-History2Influx#hass-addon` and click "Add" followed by "Close"
 6. Find the "Shelly EM History 2 Influx" add-on in the store
 
 ### Install the add-on
