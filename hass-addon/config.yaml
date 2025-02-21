@@ -1,5 +1,5 @@
 name: "Shelly EM History 2 Influx"
-version: "v0.0.1"
+version: "v0.0.2"
 slug: "shelly_em_history2influx"
 description: "Import history data from Shelly EM devices into InfluxDB"
 url: "https://github.com/psi-4ward/Shelly-EM-History2Influx#hass-addon"
