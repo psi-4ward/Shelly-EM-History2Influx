@@ -39,3 +39,4 @@ docker-compose*.yaml
 *.md
 !README.md
 .DS_Store
+.history/

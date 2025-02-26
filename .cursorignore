@@ -3,4 +3,5 @@
 .idea
 ./bun.lockb
 ./*.sqlite
-temp/    
+temp/
+.history/
