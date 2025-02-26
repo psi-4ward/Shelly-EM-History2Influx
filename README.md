@@ -25,7 +25,7 @@ Import historical energy measurement data from Shelly EM devices into InfluxDB f
 
 * 🗄 Prevent data gaps that can occur with live polling solutions like HomeAssistant, particularly during outages when Home Assistant is down or during network interruptions. The Shelly Pro 3EM devices store historical data for up to 60 days, allowing us to retrieve data even after extended outages.
 * 💾 Long-term storage of energy data
-* 📊 Analysis and visualization using Grafana
+* 📊 Analysis and visualization using Grafana, see [Dashboard Examples](./docs/Dashboard.md)
 * 🔒 No cloud, no need to expose your devices to the internet
 
 
