@@ -42,7 +42,7 @@ async function scrapeDevice(shelly: ShellyService): Promise<void> {
     d('last timestamp for measurement %s: %d', measurement, lastTimestamp);
     if (lastTimestamp < 10) {
       logger.warn(
-        `${icons.warning} Initial scrape for ${shelly.getHost()} - this could take a while...`
+        `${icons.warning} Initial scrape for ${shelly.getDeviceName()} - this could take a while...`
       );
     }
   } catch (error) {
@@ -53,7 +53,7 @@ async function scrapeDevice(shelly: ShellyService): Promise<void> {
   d(
     'fetching history since %s for device %s',
     new Date(lastTimestamp * 1000).toISOString(),
-    shelly.getHost()
+    shelly.getDeviceName()
   );
 
   let history: EMHistory = [];
@@ -65,8 +65,8 @@ async function scrapeDevice(shelly: ShellyService): Promise<void> {
   }
 
   if (history.length === 0) {
-    d('no new data for device %s', shelly.getHost());
-    logger.warn(`${icons.warning} No new history-data from device ${shelly.getHost()}`);
+    d('no new data for device %s', shelly.getDeviceName());
+    logger.warn(`${icons.warning} No new history-data from device ${shelly.getDeviceName()}`);
     return;
   }
 
@@ -76,12 +76,12 @@ async function scrapeDevice(shelly: ShellyService): Promise<void> {
     d(
       'writing %d points to influx for device %s (measurement: %s)',
       points.length,
-      shelly.getHost(),
+      shelly.getDeviceName(),
       points[0].measurement
     );
     await services.influx.bulkWrite(points);
     logger.info(
-      `${icons.success} Wrote ${points.length} points from ${shelly.getHost()} to ${
+      `${icons.success} Wrote ${points.length} points from ${shelly.getDeviceName()} to ${
         points[0].measurement
       } from ${new Date(history[0].timestamp * 1000).toISOString()} to ${new Date(
         history[history.length - 1].timestamp * 1000
@@ -115,7 +115,7 @@ function startScraping(): void {
   d('starting scrape loops for %d devices', services.shelly.length);
   for (const shelly of services.shelly) {
     deviceScrapeLoop(shelly).catch((error) => {
-      logger.error(`${icons.error} Device ${shelly.getHost()} scrape loop failed: ${error}`);
+      logger.error(`${icons.error} Device ${shelly.getDeviceName()} scrape loop failed: ${error}`);
     });
   }
 }
@@ -125,7 +125,7 @@ function startScraping(): void {
  */
 async function shutdown(): Promise<void> {
   d('initiating shutdown');
-  logger.info(`\n${icons.info} Shutting down...`);
+  logger.info(`${icons.info} Shutting down...`);
 
   // Clear all active timeouts
   for (const timeout of activeTimeouts) {
