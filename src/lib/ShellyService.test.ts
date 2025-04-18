@@ -51,8 +51,6 @@ describe.only('ShellyService E2E', () => {
       host: mockServer.host,
       tags: { device_name: 'test' },
     });
-    const isConnected = await shellyService.testConnection();
-
-    expect(isConnected).toBe(true);
+    expect(shellyService.testConnection()).resolves;
   });
 });

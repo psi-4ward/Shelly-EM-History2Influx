@@ -184,45 +184,56 @@ export class ShellyService {
     const url = `${this.baseUrl}/rpc/EMData.GetData?${params.toString()}`;
     d('fetching data from: %s', url);
 
-    const response = await fetch(url, {
-      headers,
-    });
+      const response = await fetch(url, {
+        headers,
+      });
 
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch history: ${response.status} ${
-          response.statusText
-        }\n${await response.text()}`
-      );
-    }
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch history: ${response.status} ${
+            response.statusText
+          }\n${await response.text()}`
+        );
+      }
 
-    return response.json() as Promise<EMDataResponse>;
+      return response.json() as Promise<EMDataResponse>;
   }
 
   /**
    * Test the connection to the Shelly device
    */
-  async testConnection(): Promise<boolean> {
-    try {
-      const headers: Record<string, string> = {};
-      if (this.authHeader) {
-        headers.Authorization = this.authHeader;
-      }
-
-      d('testing connection to %s', this.baseUrl);
-      const response = await fetch(`${this.baseUrl}/rpc/Shelly.GetStatus`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          id: 1,
-          method: 'Shelly.GetStatus',
-        }),
-      });
-      d('connection test result: %s', response.ok);
-      return response.ok;
-    } catch (error) {
-      d('connection test failed: %o', error);
-      return false;
+  async testConnection(): Promise<void> {
+    d('testing connection to %s', this.baseUrl);
+    const headers: Record<string, string> = {};
+    if (this.authHeader) {
+      headers.Authorization = this.authHeader;
     }
+
+    // Create a timeout promise that rejects after 3 seconds
+    // We use a promise rejections here to avoid the AbortController
+    // https://github.com/oven-sh/bun/issues/2489
+    const { reject, promise: connectionTimeoutPromise } = Promise.withResolvers();
+    setTimeout(() => {
+      d('connection test aborted due to timeout');
+      reject(new Error('Connection timeout'));
+    }, 10_000);
+
+    // Create the fetch promise
+    const fetchPromise = fetch(`${this.baseUrl}/rpc/Shelly.GetStatus`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        id: 1,
+        method: 'Shelly.GetStatus',
+      }),
+    });
+
+    // Race the fetch against the timeout.
+    // Cast the response to a Response cause connectionTimeout never resolves
+    const response = (await Promise.race([fetchPromise, connectionTimeoutPromise])) as Response;
+    if (!response.ok) {
+      throw new Error(`Connection test failed: ${response.status} ${response.statusText}`);
+    }
+    d('connection test result passed');
   }
 }
