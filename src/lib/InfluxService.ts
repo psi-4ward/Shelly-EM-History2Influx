@@ -44,6 +44,7 @@ abstract class BaseInfluxService {
   abstract query<T = Record<string, unknown>>(query: string): Promise<T[]>;
   abstract bulkWrite(points: PointInput[]): Promise<void>;
   abstract getLastTimestamp(measurement: string, deviceName: string): Promise<number | null>;
+  abstract testConnection(): Promise<void>;
   abstract close(): Promise<void>;
 }
 
@@ -62,6 +63,9 @@ class InfluxServiceV1 extends BaseInfluxService {
       database: config.database,
       username: config.username,
       password: config.password,
+      options: {
+        timeout: 15_000
+      }
     });
   }
 
@@ -90,6 +94,20 @@ class InfluxServiceV1 extends BaseInfluxService {
     const ts = results.length > 0 ? Math.floor(new Date(results[0].time).getTime() / 1000) : null;
     d('last timestamp for measurement %s: %d', measurement, ts);
     return ts;
+  }
+
+  async testConnection(): Promise<void> {
+    d('testing connection to v1 influx');
+    // First check if the connection works by querying databases
+    const databases = await this.client.getDatabaseNames();
+    
+    // Then check if our target database exists
+    if (!databases.includes(this.config.database)) {
+      d('database %s does not exist', this.config.database);
+      throw new Error(`Database '${this.config.database}' does not exist`);
+    }
+    
+    d('connection to v1 influx successful');
   }
 
   async close(): Promise<void> {
@@ -161,6 +179,25 @@ class InfluxServiceV2 extends BaseInfluxService {
     const ts = results.length > 0 ? Math.floor(new Date(results[0]._time).getTime() / 1000) : null;
     d('last timestamp for measurement %s: %d', measurement, ts);
     return ts;
+  }
+
+  async testConnection(): Promise<void> {
+    d('testing connection to v2 influx');
+    // Check if the bucket exists
+    const query = `
+      buckets()
+      |> filter(fn: (r) => r.name == "${this.config.bucket}")
+    `;
+    
+    const queryApi = this.client.getQueryApi(this.config.org);
+    const results = await queryApi.collectRows(query);
+    
+    if (results.length === 0) {
+      d('bucket %s does not exist', this.config.bucket);
+      throw new Error(`Bucket '${this.config.bucket}' does not exist`);
+    }
+    
+    d('connection to v2 influx successful');
   }
 
   async close(): Promise<void> {

@@ -46,7 +46,7 @@ async function scrapeDevice(shelly: ShellyService): Promise<void> {
       );
     }
   } catch (error) {
-    logger.error(`${icons.error} Error getting last timestamp: ${error}`);
+    logger.error(`${icons.error} Error getting last timestamp from InfluxDB: ${error}`);
     return;
   }
 
@@ -60,7 +60,7 @@ async function scrapeDevice(shelly: ShellyService): Promise<void> {
   try {
     history = await shelly.getHistory(lastTimestamp);
   } catch (error) {
-    logger.error(`${icons.error} Error fetching history: ${error}`);
+    logger.error(`${icons.error} Error fetching history from Shelly device ${shelly.getDeviceName()}: ${error}`);
     return;
   }
 
@@ -148,6 +148,59 @@ async function shutdown(): Promise<void> {
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
-// Start scraping
-logger.info(`${icons.info} Starting scrapers with interval of ${config.scrapeInterval} seconds`);
-startScraping();
+
+/**
+ * Test all connections (InfluxDB and Shelly devices)
+ */
+async function testConnections(): Promise<boolean> {
+  let allConnectionsSuccessful = true;
+  
+  // Test InfluxDB connection
+  try {
+    await services.influx.testConnection();
+    logger.info(`${icons.success} InfluxDB connection successful`);
+  } catch (error) {
+    logger.error(`${icons.error} InfluxDB: ${(error as Error).message}`);
+    allConnectionsSuccessful = false;
+  }
+  
+  // Test Shelly device connections
+  for (const shelly of services.shelly) {
+    try {
+      await shelly.testConnection();
+      logger.info(`${icons.success} Shelly device ${shelly.getDeviceName()} connection successful`);
+    } catch (error) {
+      logger.error(`${icons.error} Shelly device ${shelly.getDeviceName()}: ${(error as Error).message}`);
+      allConnectionsSuccessful = false;
+    }
+  }
+  
+  return allConnectionsSuccessful;
+}
+
+/**
+ * Start the application after ensuring all connections are working
+ */
+async function startApplication(): Promise<void> {
+  const connectionsPassed = await testConnections();
+  
+  if (!connectionsPassed) {
+    logger.info(`${icons.info} Some connections failed, retrying in 10 seconds...`);
+    
+    // Retry until all connections pass
+    const retryTimeout = setTimeout(async () => {
+      activeTimeouts.delete(retryTimeout);
+      await startApplication();
+    }, 10_000);
+    
+    activeTimeouts.add(retryTimeout);
+    return;
+  }
+  
+  // All connections passed, start scraping
+  logger.info(`${icons.info} All connections successful. Starting scrapers with interval of ${config.scrapeInterval} seconds`);
+  startScraping();
+}
+
+// Start the application
+startApplication();
