@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.0.4
+
+### 🚀 Features
+
+- [feat: Add 10s connection timeout to shell-testConnection](https://github.com/psi-4ward/Shelly-EM-History2Influx/commit/b35e44b3b0b1a37acf680b56aedc4298b965eb7b) by @psi-4ward
+- [feat: Add connection tests at startup](https://github.com/psi-4ward/Shelly-EM-History2Influx/commit/2f63343e0de6fb283897648149de2e43385f2193) by @psi-4ward
+- [feat: Write only 1k points at once to avoid big http bodies (closes #2)](https://github.com/psi-4ward/Shelly-EM-History2Influx/commit/71e04b77130d1f19fcac3594e03d4e9a2b689869) by @psi-4ward
+
+### 📝 Documentation
+
+- [docs: Add Grafana example queries and screenshots](https://github.com/psi-4ward/Shelly-EM-History2Influx/commit/b602fa4ba1e5786eca923afd799b478e44906cfb) by @psi-4ward
+
+
 ## v0.0.3
 
 ### 🧹 Maintenance
