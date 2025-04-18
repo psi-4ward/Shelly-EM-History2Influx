@@ -78,7 +78,15 @@ class InfluxServiceV1 extends BaseInfluxService {
 
   async bulkWrite(points: PointInput[]): Promise<void> {
     d('writing %d points to v1 influx', points.length);
-    await this.client.writePoints(points, { precision: 's' });
+    
+    // Process in chunks of 1000 points to avoid 413 payload errors
+    const chunkSize = 1000;
+    for (let i = 0; i < points.length; i += chunkSize) {
+      const chunk = points.slice(i, i + chunkSize);
+      d('writing chunk of %d points (%d/%d)', chunk.length, i + chunk.length, points.length);
+      await this.client.writePoints(chunk, { precision: 's' });
+    }
+    
     d('successfully wrote points');
   }
 
@@ -159,8 +167,16 @@ class InfluxServiceV2 extends BaseInfluxService {
       point.timestamp(p.timestamp);
       return point;
     });
-    this.writeApi.writePoints(influxPoints);
-    await this.writeApi.flush();
+    
+    // Process in chunks of 1000 points to avoid 413 payload errors
+    const chunkSize = 1000;
+    for (let i = 0; i < influxPoints.length; i += chunkSize) {
+      const chunk = influxPoints.slice(i, i + chunkSize);
+      d('writing chunk of %d points (%d/%d)', chunk.length, i + chunk.length, influxPoints.length);
+      this.writeApi.writePoints(chunk);
+      await this.writeApi.flush();
+    }
+    
     d('successfully wrote points');
   }
 
