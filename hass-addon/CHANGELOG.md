@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.0.5
+
+### 🚀 Features
+
+- [feat: Improve incremental history persistence](https://github.com/psi-4ward/Shelly-EM-History2Influx/commit/2847efe53c9f444729ad054d3da8f19fc0c4c240) by @psi-4ward
+- [feat: Improve shutdown; add backoff strategy; also start when some devices are unavailable](https://github.com/psi-4ward/Shelly-EM-History2Influx/commit/3249c5f48f3a64adb5c88282f1b04ae53aa8245d) by @psi-4ward
+
+### 🛠 Fixes
+
+- [fix: Correct ShellyService test](https://github.com/psi-4ward/Shelly-EM-History2Influx/commit/ac7c27270d76aeafcf4e5fe55ff75b93cbab2f29) by @psi-4ward
+
+### 🧹 Maintenance
+
+- [chore: Update deps and fix lint errors](https://github.com/psi-4ward/Shelly-EM-History2Influx/commit/aaec1a65ae5d12be7f8003663001fcc4117823b7) by @psi-4ward
+- [chore: Update Bun version to 1.3](https://github.com/psi-4ward/Shelly-EM-History2Influx/commit/44b468cee7cfe0ba5364983868f6fd764e1d12ea) by @psi-4ward
+- [chore: Update Bun version to 1.3](https://github.com/psi-4ward/Shelly-EM-History2Influx/commit/9b066c84a303f900b913a8582082fe3e68974bea) by @psi-4ward
+
+
 ## v0.0.4
 
 ### 🚀 Features
