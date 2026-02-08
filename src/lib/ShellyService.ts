@@ -41,10 +41,12 @@ export class ShellyService {
   protected readonly baseUrl: string;
   protected readonly authHeader?: string;
   protected readonly config: ShellyConfig;
+  protected readonly shutdownSignal?: AbortSignal;
 
-  constructor(config: ShellyConfig) {
+  constructor(config: ShellyConfig, shutdownSignal?: AbortSignal) {
     this.baseUrl = `http://${config.host}`;
     this.config = config;
+    this.shutdownSignal = shutdownSignal;
     if (config.username && config.password) {
       const auth = Buffer.from(`${config.username}:${config.password}`).toString('base64');
       this.authHeader = `Basic ${auth}`;
@@ -69,6 +71,8 @@ export class ShellyService {
       if (toTimestamp && response.next_record_ts > toTimestamp) {
         break;
       }
+      // Small delay to avoid overwhelming the Shelly device
+      await new Promise((r) => setTimeout(r, 500));
       d('fetching next page from ts=%s', formatDate(response.next_record_ts));
       response = await this.fetchHistory(response.next_record_ts, toTimestamp);
       history.push(...this.convertEMData(response));
@@ -99,6 +103,8 @@ export class ShellyService {
       if (toTimestamp && response.next_record_ts > toTimestamp) {
         break;
       }
+      // Small delay to avoid overwhelming the Shelly device
+      await new Promise((r) => setTimeout(r, 500));
       d('fetching next page from ts=%s', formatDate(response.next_record_ts));
       response = await this.fetchHistory(response.next_record_ts, toTimestamp);
       const page = this.convertEMData(response);
@@ -188,6 +194,17 @@ export class ShellyService {
   }
 
   /**
+   * Create an AbortSignal combining a per-request timeout with the shutdown signal
+   */
+  protected createAbortSignal(timeoutMs: number): AbortSignal {
+    const signals: AbortSignal[] = [AbortSignal.timeout(timeoutMs)];
+    if (this.shutdownSignal) {
+      signals.push(this.shutdownSignal);
+    }
+    return AbortSignal.any(signals);
+  }
+
+  /**
    * Fetch raw history data from the Shelly device
    * @param fromTimestamp - Start timestamp in seconds
    * @param toTimestamp - End timestamp in seconds (optional)
@@ -214,6 +231,7 @@ export class ShellyService {
 
     const response = await fetch(url, {
       headers,
+      signal: this.createAbortSignal(30_000),
     });
 
     if (!response.ok) {
@@ -224,7 +242,11 @@ export class ShellyService {
       );
     }
 
-    return response.json() as Promise<EMDataResponse>;
+    const json = (await response.json()) as Record<string, unknown>;
+    if (!json || !Array.isArray(json.data)) {
+      throw new Error('Unexpected response from Shelly API: missing "data" array');
+    }
+    return json as unknown as EMDataResponse;
   }
 
   /**
@@ -237,28 +259,16 @@ export class ShellyService {
       headers.Authorization = this.authHeader;
     }
 
-    // Create a timeout promise that rejects after 3 seconds
-    // We use a promise rejections here to avoid the AbortController
-    // https://github.com/oven-sh/bun/issues/2489
-    const { reject, promise: connectionTimeoutPromise } = Promise.withResolvers();
-    setTimeout(() => {
-      d('connection test aborted due to timeout');
-      reject(new Error('Connection timeout'));
-    }, 10_000);
-
-    // Create the fetch promise
-    const fetchPromise = fetch(`${this.baseUrl}/rpc/Shelly.GetStatus`, {
+    const response = await fetch(`${this.baseUrl}/rpc/Shelly.GetStatus`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
         id: 1,
         method: 'Shelly.GetStatus',
       }),
+      signal: this.createAbortSignal(10_000),
     });
 
-    // Race the fetch against the timeout.
-    // Cast the response to a Response cause connectionTimeout never resolves
-    const response = (await Promise.race([fetchPromise, connectionTimeoutPromise])) as Response;
     if (!response.ok) {
       throw new Error(`Connection test failed: ${response.status} ${response.statusText}`);
     }

@@ -26,6 +26,7 @@ interface InfluxConfigV2 {
   token: string;
   org: string;
   bucket: string;
+  timeout?: number;
 }
 
 export type InfluxConfig = InfluxConfigV1 | InfluxConfigV2;
@@ -134,7 +135,11 @@ class InfluxServiceV2 extends BaseInfluxService {
   constructor(private config: InfluxConfigV2) {
     super();
     d('initializing v2 client with url %s and bucket %s', config.url, config.bucket);
-    this.client = new InfluxDBv2({ url: config.url, token: config.token });
+    this.client = new InfluxDBv2({
+      url: config.url,
+      token: config.token,
+      timeout: config.timeout ?? 15_000,
+    });
     this.writeApi = this.client.getWriteApi(config.org, config.bucket, 's');
   }
 

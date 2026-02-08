@@ -21,10 +21,13 @@ logger.info(
 
 const config = getConfig();
 
+// Abort controller for cancelling in-flight requests on shutdown
+const shutdownController = new AbortController();
+
 // Global state for cleanup
 const services: { influx: ReturnType<typeof createInfluxService>; shelly: ShellyService[] } = {
   influx: createInfluxService(config.influx),
-  shelly: config.shelly.map((cfg) => new ShellyService(cfg)),
+  shelly: config.shelly.map((cfg) => new ShellyService(cfg, shutdownController.signal)),
 };
 
 // Track active timeouts for cleanup
@@ -33,8 +36,9 @@ const activeTimeouts: Set<ReturnType<typeof setTimeout>> = new Set();
 /**
  * Scrape data from a single Shelly device and write to InfluxDB page by page.
  * Each API page is written immediately so progress is preserved on abort.
+ * Returns true on success, false on failure.
  */
-async function scrapeDevice(shelly: ShellyService): Promise<void> {
+async function scrapeDevice(shelly: ShellyService): Promise<boolean> {
   const measurement = shelly.getMeasurementName();
 
   let lastTimestamp = 0;
@@ -51,7 +55,7 @@ async function scrapeDevice(shelly: ShellyService): Promise<void> {
     }
   } catch (error) {
     logger.error(`${icons.error} Error getting last timestamp from InfluxDB: ${error}`);
-    return;
+    return false;
   }
 
   d(
@@ -82,26 +86,59 @@ async function scrapeDevice(shelly: ShellyService): Promise<void> {
     logger.error(
       `${icons.error} Error during scrape for ${shelly.getDeviceName()}: ${error}`
     );
-    return;
+    return false;
   }
 
   if (totalPoints === 0) {
     d('no new data for device %s', shelly.getDeviceName());
     logger.warn(`${icons.warning} No new history-data from device ${shelly.getDeviceName()}`);
   }
+
+  return true;
 }
 
+/** Maximum backoff interval in seconds (15 minutes) */
+const MAX_BACKOFF_SECONDS = 900;
+
 /**
- * Continuous scraping loop for a single device
+ * Continuous scraping loop for a single device with exponential backoff on failures
  */
 async function deviceScrapeLoop(shelly: ShellyService): Promise<never> {
+  let consecutiveFailures = 0;
+
   while (true) {
-    await scrapeDevice(shelly);
+    try {
+      const success = await scrapeDevice(shelly);
+      if (success) {
+        consecutiveFailures = 0;
+      } else {
+        consecutiveFailures++;
+      }
+    } catch (error) {
+      consecutiveFailures++;
+      logger.error(`${icons.error} Unexpected error for ${shelly.getDeviceName()}: ${error}`);
+    }
+
+    // Exponential backoff: double the interval on each consecutive failure, capped at MAX_BACKOFF_SECONDS
+    const waitSeconds =
+      consecutiveFailures > 0
+        ? Math.min(config.scrapeInterval * 2 ** consecutiveFailures, MAX_BACKOFF_SECONDS)
+        : config.scrapeInterval;
+
+    if (consecutiveFailures > 0) {
+      d(
+        'device %s: %d consecutive failures, waiting %ds before retry',
+        shelly.getDeviceName(),
+        consecutiveFailures,
+        waitSeconds
+      );
+    }
+
     await new Promise((resolve) => {
       const timeout = setTimeout(() => {
         activeTimeouts.delete(timeout);
         resolve(undefined);
-      }, config.scrapeInterval * 1000);
+      }, waitSeconds * 1000);
       activeTimeouts.add(timeout);
     });
   }
@@ -126,6 +163,9 @@ async function shutdown(): Promise<void> {
   d('initiating shutdown');
   logger.info(`${icons.info} Shutting down...`);
 
+  // Abort all in-flight fetch requests
+  shutdownController.abort();
+
   // Clear all active timeouts
   for (const timeout of activeTimeouts) {
     clearTimeout(timeout);
@@ -146,61 +186,35 @@ async function shutdown(): Promise<void> {
 // Set up signal handlers
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
+process.on('unhandledRejection', (reason) => {
+  logger.error(`${icons.error} Unhandled rejection: ${reason}`);
+});
 
 /**
- * Test all connections (InfluxDB and Shelly devices)
+ * Start the application after ensuring the InfluxDB connection is working.
+ * Shelly device availability is handled per-device in deviceScrapeLoop with backoff.
  */
-async function testConnections(): Promise<boolean> {
-  let allConnectionsSuccessful = true;
-
-  // Test InfluxDB connection
-  try {
-    await services.influx.testConnection();
-    logger.info(`${icons.success} InfluxDB connection successful`);
-  } catch (error) {
-    logger.error(`${icons.error} InfluxDB: ${(error as Error).message}`);
-    allConnectionsSuccessful = false;
-  }
-
-  // Test Shelly device connections
-  for (const shelly of services.shelly) {
+async function startApplication(): Promise<void> {
+  // Retry InfluxDB connection until it succeeds — no point scraping if we can't write
+  while (true) {
     try {
-      await shelly.testConnection();
-      logger.info(`${icons.success} Shelly device ${shelly.getDeviceName()} connection successful`);
+      await services.influx.testConnection();
+      logger.info(`${icons.success} InfluxDB connection successful`);
+      break;
     } catch (error) {
-      logger.error(
-        `${icons.error} Shelly device ${shelly.getDeviceName()}: ${(error as Error).message}`
-      );
-      allConnectionsSuccessful = false;
+      logger.error(`${icons.error} InfluxDB: ${(error as Error).message}`);
+      logger.info(`${icons.info} Retrying InfluxDB connection in 10 seconds...`);
+      await new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+          activeTimeouts.delete(timeout);
+          resolve(undefined);
+        }, 10_000);
+        activeTimeouts.add(timeout);
+      });
     }
   }
 
-  return allConnectionsSuccessful;
-}
-
-/**
- * Start the application after ensuring all connections are working
- */
-async function startApplication(): Promise<void> {
-  const connectionsPassed = await testConnections();
-
-  if (!connectionsPassed) {
-    logger.info(`${icons.info} Some connections failed, retrying in 10 seconds...`);
-
-    // Retry until all connections pass
-    const retryTimeout = setTimeout(async () => {
-      activeTimeouts.delete(retryTimeout);
-      await startApplication();
-    }, 10_000);
-
-    activeTimeouts.add(retryTimeout);
-    return;
-  }
-
-  // All connections passed, start scraping
-  logger.info(
-    `${icons.info} All connections successful. Starting scrapers with interval of ${config.scrapeInterval} seconds`
-  );
+  logger.info(`${icons.info} Starting scrapers with interval of ${config.scrapeInterval} seconds`);
   startScraping();
 }
 
