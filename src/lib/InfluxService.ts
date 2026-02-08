@@ -5,7 +5,7 @@
  */
 import { InfluxDB as InfluxDBv2, Point, type WriteApi } from '@influxdata/influxdb-client';
 import debug from 'debug';
-import { type IPoint, InfluxDB as InfluxDBv1 } from 'influx';
+import { InfluxDB as InfluxDBv1, type IPoint } from 'influx';
 
 const d = debug('s2i:InfluxService');
 
@@ -64,8 +64,8 @@ class InfluxServiceV1 extends BaseInfluxService {
       username: config.username,
       password: config.password,
       options: {
-        timeout: 15_000
-      }
+        timeout: 15_000,
+      },
     });
   }
 
@@ -78,7 +78,7 @@ class InfluxServiceV1 extends BaseInfluxService {
 
   async bulkWrite(points: PointInput[]): Promise<void> {
     d('writing %d points to v1 influx', points.length);
-    
+
     // Process in chunks of 1000 points to avoid 413 payload errors
     const chunkSize = 1000;
     for (let i = 0; i < points.length; i += chunkSize) {
@@ -86,7 +86,7 @@ class InfluxServiceV1 extends BaseInfluxService {
       d('writing chunk of %d points (%d/%d)', chunk.length, i + chunk.length, points.length);
       await this.client.writePoints(chunk, { precision: 's' });
     }
-    
+
     d('successfully wrote points');
   }
 
@@ -108,13 +108,13 @@ class InfluxServiceV1 extends BaseInfluxService {
     d('testing connection to v1 influx');
     // First check if the connection works by querying databases
     const databases = await this.client.getDatabaseNames();
-    
+
     // Then check if our target database exists
     if (!databases.includes(this.config.database)) {
       d('database %s does not exist', this.config.database);
       throw new Error(`Database '${this.config.database}' does not exist`);
     }
-    
+
     d('connection to v1 influx successful');
   }
 
@@ -167,7 +167,7 @@ class InfluxServiceV2 extends BaseInfluxService {
       point.timestamp(p.timestamp);
       return point;
     });
-    
+
     // Process in chunks of 1000 points to avoid 413 payload errors
     const chunkSize = 1000;
     for (let i = 0; i < influxPoints.length; i += chunkSize) {
@@ -176,7 +176,7 @@ class InfluxServiceV2 extends BaseInfluxService {
       this.writeApi.writePoints(chunk);
       await this.writeApi.flush();
     }
-    
+
     d('successfully wrote points');
   }
 
@@ -204,15 +204,15 @@ class InfluxServiceV2 extends BaseInfluxService {
       buckets()
       |> filter(fn: (r) => r.name == "${this.config.bucket}")
     `;
-    
+
     const queryApi = this.client.getQueryApi(this.config.org);
     const results = await queryApi.collectRows(query);
-    
+
     if (results.length === 0) {
       d('bucket %s does not exist', this.config.bucket);
       throw new Error(`Bucket '${this.config.bucket}' does not exist`);
     }
-    
+
     d('connection to v2 influx successful');
   }
 

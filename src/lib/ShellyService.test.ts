@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
-import { type MockServerData, createMockServer } from '../test-utils/shelly-mock-server';
+import { createMockServer, type MockServerData } from '../test-utils/shelly-mock-server';
 import { ShellyService } from './ShellyService';
 
 describe.only('ShellyService E2E', () => {

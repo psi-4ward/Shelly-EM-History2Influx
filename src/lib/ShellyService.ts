@@ -84,7 +84,6 @@ export class ShellyService {
     const { keys = [], data } = response;
     const historyItems: EMHistory = [];
 
-    // biome-ignore lint: I like forEach :p
     data.forEach(({ ts, period, values }) => {
       values.forEach((dataSet, index) => {
         // Calculate timestamp for this history-item
@@ -184,19 +183,19 @@ export class ShellyService {
     const url = `${this.baseUrl}/rpc/EMData.GetData?${params.toString()}`;
     d('fetching data from: %s', url);
 
-      const response = await fetch(url, {
-        headers,
-      });
+    const response = await fetch(url, {
+      headers,
+    });
 
-      if (!response.ok) {
-        throw new Error(
-          `Failed to fetch history: ${response.status} ${
-            response.statusText
-          }\n${await response.text()}`
-        );
-      }
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch history: ${response.status} ${
+          response.statusText
+        }\n${await response.text()}`
+      );
+    }
 
-      return response.json() as Promise<EMDataResponse>;
+    return response.json() as Promise<EMDataResponse>;
   }
 
   /**

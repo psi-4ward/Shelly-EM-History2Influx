@@ -5,8 +5,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse } from 'yaml';
 import type { InfluxConfig } from './lib/InfluxService';
-import type { ShellyConfig } from './lib/ShellyService';
 import { logger } from './lib/Logger';
+import type { ShellyConfig } from './lib/ShellyService';
 
 export interface Config {
   shelly: ShellyConfig[];
@@ -155,7 +155,7 @@ function loadConfig(configPath: string): Partial<Config> {
   try {
     if (existsSync(configPath)) {
       const config = loadYamlConfig(configPath);
-      
+
       logger.info(`${icons.info} Loaded configuration from: ${configPath}`);
       return config;
     }

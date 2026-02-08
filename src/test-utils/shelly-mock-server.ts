@@ -43,11 +43,11 @@ export async function createMockServer(port = 0): Promise<MockServerData> {
         let data = mockData[ts];
         if (!data) {
           // If ts is before the first timestamp, return the data of the first timestamp
-          if (parseInt(ts) < parseInt(firstTstamp)) {
+          if (parseInt(ts, 10) < parseInt(firstTstamp, 10)) {
             data = mockData[firstTstamp];
           }
           // If ts is after the last timestamp, return a empty data object
-          else if (parseInt(ts) > parseInt(lastTstamp)) {
+          else if (parseInt(ts, 10) > parseInt(lastTstamp, 10)) {
             data = {
               keys: mockData[lastTstamp].keys,
               data: [],

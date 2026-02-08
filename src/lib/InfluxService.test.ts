@@ -89,7 +89,10 @@ describe('InfluxService E2E Tests', () => {
       });
 
       test('should return null for non-existent measurement', async () => {
-        const lastTimestamp = await influx.getLastTimestamp('non_existent_measurement', TEST_DEVICE);
+        const lastTimestamp = await influx.getLastTimestamp(
+          'non_existent_measurement',
+          TEST_DEVICE
+        );
         expect(lastTimestamp).toBeNull();
       });
 
@@ -97,7 +100,7 @@ describe('InfluxService E2E Tests', () => {
         const now = Math.floor(Date.now() / 1000);
         const device1 = 'shellyem-123';
         const device2 = 'shellyem-456';
-        
+
         const points = [
           {
             measurement: TEST_MEASUREMENT,
@@ -110,7 +113,7 @@ describe('InfluxService E2E Tests', () => {
             fields: { total_act_energy: 20 },
             timestamp: now - 7200, // 2 hours ago
             tags: { device_name: device2 },
-          }
+          },
         ];
 
         await influx.bulkWrite(points);

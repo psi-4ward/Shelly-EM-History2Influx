@@ -1,8 +1,8 @@
 import debug from 'debug';
 import { getConfig } from './config';
 import { createInfluxService } from './lib/InfluxService';
-import { type EMHistory, ShellyService } from './lib/ShellyService';
 import { logger } from './lib/Logger';
+import { type EMHistory, ShellyService } from './lib/ShellyService';
 
 // Debug namespace
 const d = debug('s2i');
@@ -15,7 +15,9 @@ const icons = {
   success: '✅',
 } as const;
 
-logger.info(`🚀 Shelly EM History 2 Influx ${process.env.SHELLY_EM_HISTORY2INFLUX_VERSION || 'development-version'}`);
+logger.info(
+  `🚀 Shelly EM History 2 Influx ${process.env.SHELLY_EM_HISTORY2INFLUX_VERSION || 'development-version'}`
+);
 
 const config = getConfig();
 
@@ -36,7 +38,8 @@ async function scrapeDevice(shelly: ShellyService): Promise<void> {
 
   let lastTimestamp = 0;
   try {
-    lastTimestamp = (await services.influx.getLastTimestamp(measurement, shelly.getDeviceName())) ?? 0;
+    lastTimestamp =
+      (await services.influx.getLastTimestamp(measurement, shelly.getDeviceName())) ?? 0;
     // increment time by 1 second because we already scraped data until "lastTimestamp"
     lastTimestamp++;
     d('last timestamp for measurement %s: %d', measurement, lastTimestamp);
@@ -60,7 +63,9 @@ async function scrapeDevice(shelly: ShellyService): Promise<void> {
   try {
     history = await shelly.getHistory(lastTimestamp);
   } catch (error) {
-    logger.error(`${icons.error} Error fetching history from Shelly device ${shelly.getDeviceName()}: ${error}`);
+    logger.error(
+      `${icons.error} Error fetching history from Shelly device ${shelly.getDeviceName()}: ${error}`
+    );
     return;
   }
 
@@ -148,13 +153,12 @@ async function shutdown(): Promise<void> {
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
-
 /**
  * Test all connections (InfluxDB and Shelly devices)
  */
 async function testConnections(): Promise<boolean> {
   let allConnectionsSuccessful = true;
-  
+
   // Test InfluxDB connection
   try {
     await services.influx.testConnection();
@@ -163,18 +167,20 @@ async function testConnections(): Promise<boolean> {
     logger.error(`${icons.error} InfluxDB: ${(error as Error).message}`);
     allConnectionsSuccessful = false;
   }
-  
+
   // Test Shelly device connections
   for (const shelly of services.shelly) {
     try {
       await shelly.testConnection();
       logger.info(`${icons.success} Shelly device ${shelly.getDeviceName()} connection successful`);
     } catch (error) {
-      logger.error(`${icons.error} Shelly device ${shelly.getDeviceName()}: ${(error as Error).message}`);
+      logger.error(
+        `${icons.error} Shelly device ${shelly.getDeviceName()}: ${(error as Error).message}`
+      );
       allConnectionsSuccessful = false;
     }
   }
-  
+
   return allConnectionsSuccessful;
 }
 
@@ -183,22 +189,24 @@ async function testConnections(): Promise<boolean> {
  */
 async function startApplication(): Promise<void> {
   const connectionsPassed = await testConnections();
-  
+
   if (!connectionsPassed) {
     logger.info(`${icons.info} Some connections failed, retrying in 10 seconds...`);
-    
+
     // Retry until all connections pass
     const retryTimeout = setTimeout(async () => {
       activeTimeouts.delete(retryTimeout);
       await startApplication();
     }, 10_000);
-    
+
     activeTimeouts.add(retryTimeout);
     return;
   }
-  
+
   // All connections passed, start scraping
-  logger.info(`${icons.info} All connections successful. Starting scrapers with interval of ${config.scrapeInterval} seconds`);
+  logger.info(
+    `${icons.info} All connections successful. Starting scrapers with interval of ${config.scrapeInterval} seconds`
+  );
   startScraping();
 }
 
