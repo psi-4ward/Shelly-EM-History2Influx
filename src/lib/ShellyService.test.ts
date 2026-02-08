@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
 import { createMockServer, type MockServerData } from '../test-utils/shelly-mock-server';
 import { ShellyService } from './ShellyService';
 
-describe.only('ShellyService E2E', () => {
+describe('ShellyService E2E', () => {
   let mockServer: MockServerData;
 
   beforeAll(async () => {
