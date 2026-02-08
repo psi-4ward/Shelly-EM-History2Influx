@@ -78,6 +78,35 @@ export class ShellyService {
   }
 
   /**
+   * Fetch history data page by page using an async generator.
+   * Each yielded value is one page of data from the Shelly API,
+   * allowing the caller to persist data incrementally.
+   */
+  async *getHistoryPaged(
+    fromTimestamp: number,
+    toTimestamp?: number
+  ): AsyncGenerator<EMHistory> {
+    d(
+      'fetching history paged from=%s to=%s',
+      formatDate(fromTimestamp),
+      toTimestamp ? formatDate(toTimestamp) : 'now'
+    );
+    let response = await this.fetchHistory(fromTimestamp, toTimestamp);
+    const firstPage = this.convertEMData(response);
+    if (firstPage.length > 0) yield firstPage;
+
+    while (response.next_record_ts && response.next_record_ts > 0) {
+      if (toTimestamp && response.next_record_ts > toTimestamp) {
+        break;
+      }
+      d('fetching next page from ts=%s', formatDate(response.next_record_ts));
+      response = await this.fetchHistory(response.next_record_ts, toTimestamp);
+      const page = this.convertEMData(response);
+      if (page.length > 0) yield page;
+    }
+  }
+
+  /**
    * Convert EMDataResponse to EMHistory format
    */
   protected convertEMData(response: EMDataResponse): EMHistory {

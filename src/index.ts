@@ -2,7 +2,7 @@ import debug from 'debug';
 import { getConfig } from './config';
 import { createInfluxService } from './lib/InfluxService';
 import { logger } from './lib/Logger';
-import { type EMHistory, ShellyService } from './lib/ShellyService';
+import { ShellyService } from './lib/ShellyService';
 
 // Debug namespace
 const d = debug('s2i');
@@ -31,7 +31,8 @@ const services: { influx: ReturnType<typeof createInfluxService>; shelly: Shelly
 const activeTimeouts: Set<ReturnType<typeof setTimeout>> = new Set();
 
 /**
- * Scrape data from a single Shelly device and write to InfluxDB
+ * Scrape data from a single Shelly device and write to InfluxDB page by page.
+ * Each API page is written immediately so progress is preserved on abort.
  */
 async function scrapeDevice(shelly: ShellyService): Promise<void> {
   const measurement = shelly.getMeasurementName();
@@ -59,41 +60,34 @@ async function scrapeDevice(shelly: ShellyService): Promise<void> {
     shelly.getDeviceName()
   );
 
-  let history: EMHistory = [];
+  let totalPoints = 0;
   try {
-    history = await shelly.getHistory(lastTimestamp);
+    for await (const page of shelly.getHistoryPaged(lastTimestamp)) {
+      const points = shelly.toInfluxPoints(page);
+      d(
+        'writing %d points to influx for device %s (measurement: %s)',
+        points.length,
+        shelly.getDeviceName(),
+        measurement
+      );
+      await services.influx.bulkWrite(points);
+      totalPoints += points.length;
+      logger.info(
+        `${icons.success} Wrote ${points.length} points from ${shelly.getDeviceName()} to ${measurement} from ${new Date(page[0].timestamp * 1000).toISOString()} to ${new Date(
+          page[page.length - 1].timestamp * 1000
+        ).toISOString()}`
+      );
+    }
   } catch (error) {
     logger.error(
-      `${icons.error} Error fetching history from Shelly device ${shelly.getDeviceName()}: ${error}`
+      `${icons.error} Error during scrape for ${shelly.getDeviceName()}: ${error}`
     );
     return;
   }
 
-  if (history.length === 0) {
+  if (totalPoints === 0) {
     d('no new data for device %s', shelly.getDeviceName());
     logger.warn(`${icons.warning} No new history-data from device ${shelly.getDeviceName()}`);
-    return;
-  }
-
-  const points = shelly.toInfluxPoints(history);
-
-  try {
-    d(
-      'writing %d points to influx for device %s (measurement: %s)',
-      points.length,
-      shelly.getDeviceName(),
-      points[0].measurement
-    );
-    await services.influx.bulkWrite(points);
-    logger.info(
-      `${icons.success} Wrote ${points.length} points from ${shelly.getDeviceName()} to ${
-        points[0].measurement
-      } from ${new Date(history[0].timestamp * 1000).toISOString()} to ${new Date(
-        history[history.length - 1].timestamp * 1000
-      ).toISOString()}`
-    );
-  } catch (error) {
-    logger.error(`${icons.error} Error writing to InfluxDB: ${error}`);
   }
 }
 
