@@ -43,6 +43,7 @@ schema:
     port: int?
     username: str?
     password: str?
+    token: str?
     database: str?
     bucket: str?
     org: str?
