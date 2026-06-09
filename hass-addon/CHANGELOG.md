@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.0.6
+
+- no changes
+
+
 ## v0.0.5
 
 ### 🚀 Features
